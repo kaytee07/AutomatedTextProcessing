@@ -1,11 +1,11 @@
 package project.automatedtextprocessing.Utils;
 
 public class RegexMatchResult {
-    private String matchedText;
-    private int startIndex;
-    private int endIndex;
+    private final String matchedText;
+    private final int startIndex;
+    private final int endIndex;
 
-    RegexMatchResult(String matchedText, int startIndex, int endIndex) {
+    public RegexMatchResult(String matchedText, int startIndex, int endIndex) {
         this.matchedText = matchedText;
         this.startIndex = startIndex;
         this.endIndex = endIndex;
