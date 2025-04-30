@@ -72,7 +72,7 @@ public class TextRegexProcessor {
         StringBuilder result = new StringBuilder();
         result.append(input.substring(0, matchResult.getStartIndex()));
         result.append(replacement);
-        result.append(input.substring(matchResult.getEndIndex()));
+        result.append(input.substring(matchResult.getEndIndex() ));
 
         return  result.toString();
     }

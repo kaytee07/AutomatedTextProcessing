@@ -38,21 +38,35 @@ public class TextFileProcessor {
         }
     }
 
-    public String getAllLines() {
+    public StringBuilder getAllLines() {
         if (fileTexts.length() == 0) {
             throw new IllegalStateException("No content available. Ensure the file has been read and is not empty.");
         }
-        return fileTexts.toString();
+        return fileTexts;
     }
 
     public ArrayList<RegexMatchResult> findMatchesInFile(String pattern) {
         textRegexProcessor.compileRegexPattern(pattern);
-        return textRegexProcessor.getAllMatches(getAllLines());
+        return textRegexProcessor.getAllMatches(getAllLines().toString());
     }
 
     public String replaceInFile(String pattern, String replacement) {
         textRegexProcessor.compileRegexPattern(pattern);
-        return textRegexProcessor.replaceAllMatches(getAllLines(), replacement);
+        return textRegexProcessor.replaceAllMatches(getAllLines().toString(), replacement);
+    }
+
+    public String replaceAWordInFile(String pattern, String replacement) {
+        return textRegexProcessor.replaceAMatch(pattern, replacement);
+    }
+
+    public void updateFileTexts(String inputText, String outputPath) throws IOException {
+        try {
+            fileTexts = new StringBuilder();
+            fileTexts.append(inputText);
+            writeToFile(outputPath, inputText);
+        } catch (IOException e) {
+            throw e;
+        }
     }
 
     public void writeToFile(String outputPath, String content) throws IOException {
