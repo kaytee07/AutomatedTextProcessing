@@ -45,9 +45,9 @@ public class TextFileProcessor {
         return fileTexts;
     }
 
-    public ArrayList<RegexMatchResult> findMatchesInFile(String pattern) {
-        textRegexProcessor.compileRegexPattern(pattern);
-        return textRegexProcessor.getAllMatches(getAllLines().toString());
+    public ArrayList<RegexMatchResult> findMatchesInFile(String regex, String texts) {
+        textRegexProcessor.compileRegexPattern(regex);
+        return textRegexProcessor.getAllMatches(texts);
     }
 
     public String replaceInFile(String pattern, String replacement) {
