@@ -1,5 +1,7 @@
 package project.automatedtextprocessing.models;
 
+import java.util.UUID;
+
 public class TextData {
     private String id;
     private String content;
@@ -8,7 +10,6 @@ public class TextData {
         this.id = id;
         this.content = content;
     }
-
 
     public String getId() {
         return id;
