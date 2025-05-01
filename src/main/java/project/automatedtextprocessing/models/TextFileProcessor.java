@@ -2,7 +2,8 @@ package project.automatedtextprocessing.models;
 
 import project.automatedtextprocessing.Utils.RegexMatchResult;
 import java.io.*;
-import java.util.ArrayList;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class TextFileProcessor {
     private String filePath;
@@ -76,14 +77,63 @@ public class TextFileProcessor {
 
     public int getWordFrequencies (ArrayList<String> data) {
         int wordCount = data.stream()
-                .reduce(0, (acc, match) -> acc += 1, Integer:: sum);
+                .reduce(0, (acc, match) -> acc + 1, Integer:: sum);
         return wordCount;
     }
 
     public int  getNumberOfWords () {
-
+        String text = fileTexts.toString();
+        int numOfWords = Arrays.stream(text.split("\\s+"))
+                .reduce(0, (acc, words) -> acc + 1, Integer::sum);
+        return numOfWords;
     }
 
+    public static List<String> summarize(List<String> lines, int topN) {
+        List<String> sentences = extractSentences(lines);
+        Map<String, Long> wordFrequencies = calculateWordFrequencies(lines);
+        Map<String, Long> sentenceScores = scoreSentences(sentences, wordFrequencies);
+        return selectTopSentences(sentenceScores, topN);
+    }
+
+    private static List<String> extractSentences(List<String> lines) {
+        return lines.stream()
+                .flatMap(line -> Arrays.stream(line.split("(?<=[.!?])\\s*")))
+                .collect(Collectors.toList());
+    }
+
+    private static Map<String, Long> calculateWordFrequencies(List<String> lines) {
+        return lines.stream()
+                .flatMap(line -> Arrays.stream(line.toLowerCase().split("\\W+")))
+                .filter(word -> !word.isEmpty() && isStopWord(word))
+                .collect(Collectors.groupingBy(word -> word, Collectors.counting()));
+    }
+
+    private static Map<String, Long> scoreSentences(List<String> sentences, Map<String, Long> wordFrequencies) {
+        Map<String, Long> scores = new HashMap<>();
+        for (String sentence : sentences) {
+            long score = Arrays.stream(sentence.toLowerCase().split("\\W+"))
+                    .filter(wordFrequencies::containsKey)
+                    .mapToLong(wordFrequencies::get)
+                    .sum();
+            scores.put(sentence, score);
+        }
+        return scores;
+    }
+
+    private static List<String> selectTopSentences(Map<String, Long> sentenceScores, int topN) {
+        return sentenceScores.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(topN)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+    }
+
+
+
+    private static boolean isStopWord(String word) {
+        Set<String> stopWords = Set.of("the", "is", "at", "which", "on", "a", "an", "and", "or", "of", "in", "to", "for", "by", "with");
+        return stopWords.contains(word);
+    }
 
 
     public void writeToFile(String outputPath, String content) throws IOException {
