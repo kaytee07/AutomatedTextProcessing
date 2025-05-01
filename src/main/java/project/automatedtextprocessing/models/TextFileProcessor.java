@@ -45,9 +45,14 @@ public class TextFileProcessor {
         return fileTexts;
     }
 
-    public ArrayList<RegexMatchResult> findMatchesInFile(String regex, String texts) {
+    public ArrayList<RegexMatchResult> wordPatternRecognizer(String regex) {
+        textRegexProcessor.compileTextPattern(regex);
+        return textRegexProcessor.getAllMatches(fileTexts.toString());
+    }
+
+    public ArrayList<RegexMatchResult> regexPatternRecognizer(String regex) {
         textRegexProcessor.compileRegexPattern(regex);
-        return textRegexProcessor.getAllMatches(texts);
+        return textRegexProcessor.getAllMatches(fileTexts.toString());
     }
 
     public String replaceInFile(String pattern, String replacement) {
@@ -59,7 +64,7 @@ public class TextFileProcessor {
         return textRegexProcessor.replaceAMatch(pattern, replacement);
     }
 
-    public void updateFileTexts(String inputText, String outputPath) throws IOException {
+    public void EditFileTexts(String inputText, String outputPath) throws IOException {
         try {
             fileTexts = new StringBuilder();
             fileTexts.append(inputText);
@@ -68,6 +73,18 @@ public class TextFileProcessor {
             throw e;
         }
     }
+
+//    public int getWordFrequencies (ArrayList<String> data) {
+//        int wordCount = data.stream()
+//                .reduce(0, (acc, match) -> acc += 1, Integer:: sum);
+//        return wordCount;
+//    }
+
+//    public int  getNumberOfWords () {
+//
+//    }
+
+
 
     public void writeToFile(String outputPath, String content) throws IOException {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(outputPath))) {
