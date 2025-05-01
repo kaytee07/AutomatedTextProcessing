@@ -2,6 +2,7 @@ package project.automatedtextprocessing.models;
 
 import project.automatedtextprocessing.Utils.RegexMatchResult;
 import java.io.*;
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -9,10 +10,13 @@ public class TextFileProcessor {
     private String filePath;
     private StringBuilder fileTexts;
     private TextRegexProcessor textRegexProcessor;
+    private DataHandler dataHandler;
+    private int ID = 0;
 
     public TextFileProcessor() {
         fileTexts = new StringBuilder();
         textRegexProcessor = new TextRegexProcessor();
+        dataHandler = new DataHandler();
     }
 
     public void setFilePath(String path) {
@@ -39,12 +43,23 @@ public class TextFileProcessor {
         }
     }
 
+    public void writeToStringBuilder(String content) {
+        if (content == null || content.isEmpty()) return;
+        fileTexts.setLength(0);
+
+        String[] lines = content.split("\\r?\\n"); // Handle different newline formats
+        for (String line : lines) {
+            fileTexts.append(line).append(System.lineSeparator());
+        }
+    }
+
     public StringBuilder getAllLines() {
         if (fileTexts.length() == 0) {
             throw new IllegalStateException("No content available. Ensure the file has been read and is not empty.");
         }
         return fileTexts;
     }
+
 
     public ArrayList<RegexMatchResult> wordPatternRecognizer(String regex) {
         textRegexProcessor.compileTextPattern(regex);
@@ -135,6 +150,22 @@ public class TextFileProcessor {
         return stopWords.contains(word);
     }
 
+    public void saveEntryToDB(String content){
+        TextData newEntry = new TextData(String.valueOf(ID), content);
+        dataHandler.addData(newEntry);
+    }
+
+    public ArrayList<TextData> getAllEntries(){
+        return dataHandler.listAllEntries();
+    }
+
+    public void updateEntry(String id){
+        dataHandler.updateEntry(id, fileTexts.toString());
+    }
+
+    public void deleteEntry(String id){
+        dataHandler.deleteEntry(id);
+    }
 
     public void writeToFile(String outputPath, String content) throws IOException {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(outputPath))) {
