@@ -74,15 +74,15 @@ public class TextFileProcessor {
         }
     }
 
-//    public int getWordFrequencies (ArrayList<String> data) {
-//        int wordCount = data.stream()
-//                .reduce(0, (acc, match) -> acc += 1, Integer:: sum);
-//        return wordCount;
-//    }
+    public int getWordFrequencies (ArrayList<String> data) {
+        int wordCount = data.stream()
+                .reduce(0, (acc, match) -> acc += 1, Integer:: sum);
+        return wordCount;
+    }
 
-//    public int  getNumberOfWords () {
-//
-//    }
+    public int  getNumberOfWords () {
+
+    }
 
 
 
