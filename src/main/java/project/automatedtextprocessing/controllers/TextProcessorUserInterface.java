@@ -79,7 +79,6 @@ public class TextProcessorUserInterface extends Application {
 
         int row = 0;
 
-        // File Selection
         controlPanel.add(new Label("File:"), 0, row);
         Button chooseFileButton = new Button("Choose File");
         chooseFileButton.setOnAction(e -> chooseAndLoadFile(primaryStage, root));
@@ -152,9 +151,9 @@ public class TextProcessorUserInterface extends Application {
         dbEntriesListView = new ListView<>();
         dbEntriesListView.setPrefHeight(100);
         dbEntriesListView.setOnMouseClicked(event -> {
-            if (event.getClickCount() == 2) {
-                loadDBEntry(root);
-            }
+//            if (event.getClickCount() == 2) {
+//                loadDBEntry(root);
+//            }
         });
         Button deleteDBEntryButton = new Button("Delete Selected Entry");
         deleteDBEntryButton.setOnAction(e -> deleteDBEntry());
@@ -195,24 +194,22 @@ public class TextProcessorUserInterface extends Application {
                 ArrayList<RegexMatchResult> matches = processor.regexPatternRecognizer(regex);
                 matchCountLabel.setText("Matches Found: " + matches.size());
 
-                // Clear previous content
                 textFlow.getChildren().clear();
 
                 String text = textArea.getText();
                 int lastIndex = 0;
 
-                // Add text segments with matches highlighted
                 for (RegexMatchResult match : matches) {
                     int start = match.getStartIndex();
                     int end = match.getEndIndex();
 
-                    // Add text before match
+
                     if (lastIndex < start) {
                         Text before = new Text(text.substring(lastIndex, start));
                         textFlow.getChildren().add(before);
                     }
 
-                    // Add highlighted match
+
                     Text matchText = new Text(text.substring(start, end));
                     matchText.setStyle("-fx-fill: black; -fx-background-color: yellow; -fx-background-radius: 2;");
                     textFlow.getChildren().add(matchText);
@@ -220,13 +217,12 @@ public class TextProcessorUserInterface extends Application {
                     lastIndex = end;
                 }
 
-                // Add remaining text
                 if (lastIndex < text.length()) {
                     Text remaining = new Text(text.substring(lastIndex));
                     textFlow.getChildren().add(remaining);
                 }
 
-                // Switch to TextFlow view
+                regexField.setText("");
                 root.setCenter(textFlowScrollPane);
             }
         } catch (Exception ex) {
@@ -243,8 +239,10 @@ public class TextProcessorUserInterface extends Application {
                 textArea.setText(result);
                 processor.writeToStringBuilder(result);
                 updateWordCount();
-                root.setCenter(textArea); // Ensure text area is shown
+                root.setCenter(textArea);
             }
+            replacePatternField.setText("");
+            replacementField.setText("");
         } catch (Exception ex) {
             showAlert(Alert.AlertType.ERROR, "Error", "Error replacing text: " + ex.getMessage());
         }
@@ -270,7 +268,7 @@ public class TextProcessorUserInterface extends Application {
             textArea.setText(summaryText.toString());
             processor.writeToStringBuilder(summaryText.toString());
             updateWordCount();
-            root.setCenter(textArea); // Ensure text area is shown
+            root.setCenter(textArea);
         } catch (Exception ex) {
             showAlert(Alert.AlertType.ERROR, "Error", "Error summarizing text: " + ex.getMessage());
         }
@@ -281,7 +279,7 @@ public class TextProcessorUserInterface extends Application {
             if (isUpdatingEntry && updatingEntryId != null) {
                 processor.updateEntry(updatingEntryId);
                 showAlert(Alert.AlertType.INFORMATION, "Success", "Database entry updated");
-                textArea.setText(""); // Clear text area
+                textArea.setText("");
                 processor.writeToStringBuilder("");
                 isUpdatingEntry = false;
                 updatingEntryId = null;
@@ -289,9 +287,9 @@ public class TextProcessorUserInterface extends Application {
                 processor.saveEntryToDB(textArea.getText());
                 showAlert(Alert.AlertType.INFORMATION, "Success", "Content saved to database");
             }
-            listDBEntries(); // Refresh DB entries list
+            listDBEntries();
             updateWordCount();
-            root.setCenter(textArea); // Ensure text area is shown
+            root.setCenter(textArea);
         } catch (Exception ex) {
             showAlert(Alert.AlertType.ERROR, "Error", "Error saving to database: " + ex.getMessage());
         }
@@ -328,6 +326,7 @@ public class TextProcessorUserInterface extends Application {
             } else {
                 showAlert(Alert.AlertType.WARNING, "Warning", "Please select an entry to update");
             }
+
         } catch (Exception ex) {
             showAlert(Alert.AlertType.ERROR, "Error", "Error preparing entry for update: " + ex.getMessage());
         }
@@ -346,28 +345,28 @@ public class TextProcessorUserInterface extends Application {
         }
     }
 
-    private void loadDBEntry(BorderPane root) {
-        try {
-            String selected = dbEntriesListView.getSelectionModel().getSelectedItem();
-            if (selected != null) {
-                String id = selected.split(" \\| ")[0].replace("ID: ", "");
-                ArrayList<TextData> entries = processor.getAllEntries();
-                for (TextData entry : entries) {
-                    if (entry.getId().equals(id)) {
-                        textArea.setText(entry.getContent());
-                        processor.writeToStringBuilder(entry.getContent());
-                        updateWordCount();
-                        root.setCenter(textArea); // Ensure text area is shown
-                        isUpdatingEntry = false;
-                        updatingEntryId = null;
-                        break;
-                    }
-                }
-            }
-        } catch (Exception ex) {
-            showAlert(Alert.AlertType.ERROR, "Error", "Error loading database entry: " + ex.getMessage());
-        }
-    }
+//    private void loadDBEntry(BorderPane root) {
+//        try {
+//            String selected = dbEntriesListView.getSelectionModel().getSelectedItem();
+//            if (selected != null) {
+//                String id = selected.split(" \\| ")[0].replace("ID: ", "");
+//                ArrayList<TextData> entries = processor.getAllEntries();
+//                for (TextData entry : entries) {
+//                    if (entry.getId().equals(id)) {
+//                        textArea.setText(entry.getContent());
+//                        processor.writeToStringBuilder(entry.getContent());
+//                        updateWordCount();
+//                        root.setCenter(textArea);
+//                        isUpdatingEntry = false;
+//                        updatingEntryId = null;
+//                        break;
+//                    }
+//                }
+//            }
+//        } catch (Exception ex) {
+//            showAlert(Alert.AlertType.ERROR, "Error", "Error loading database entry: " + ex.getMessage());
+//        }
+//    }
 
     private void deleteDBEntry() {
         try {

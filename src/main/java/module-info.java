@@ -9,6 +9,7 @@ module project.automatedtextprocessing {
     requires org.kordamp.ikonli.javafx;
     requires eu.hansolo.tilesfx;
     requires com.almasb.fxgl.all;
+    requires java.logging;
 
     opens project.automatedtextprocessing to javafx.fxml;
     exports project.automatedtextprocessing.controllers;
