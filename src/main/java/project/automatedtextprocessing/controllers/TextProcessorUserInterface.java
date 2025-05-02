@@ -1,5 +1,7 @@
 package project.automatedtextprocessing.controllers;
 
+import project.automatedtextprocessing.exceptions.FileProcessingException;
+import project.automatedtextprocessing.exceptions.InvalidFilePathException;
 import project.automatedtextprocessing.models.TextData;
 import project.automatedtextprocessing.models.TextFileProcessor;
 import project.automatedtextprocessing.Utils.RegexMatchResult;
@@ -46,21 +48,18 @@ public class TextProcessorUserInterface extends Application {
     private void initializeUI(Stage primaryStage) {
         primaryStage.setTitle("Text Processor");
 
-        // Main layout
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(10));
 
-        // Text Area and TextFlow
         textArea = new TextArea();
         textArea.setWrapText(true);
         textArea.setPrefRowCount(20);
         textArea.setPrefColumnCount(50);
 
-        // Update StringBuilder and word count on text change
+
         textArea.textProperty().addListener((obs, oldValue, newValue) -> {
             processor.writeToStringBuilder(newValue);
             updateWordCount();
-            // Reset to text area view when editing
             root.setCenter(textArea);
         });
 
@@ -72,7 +71,6 @@ public class TextProcessorUserInterface extends Application {
 
         root.setCenter(textArea);
 
-        // Control Panel
         GridPane controlPanel = new GridPane();
         controlPanel.setHgap(10);
         controlPanel.setVgap(10);
@@ -88,7 +86,7 @@ public class TextProcessorUserInterface extends Application {
         controlPanel.add(chooseFileButton, 1, row);
         row++;
 
-        // Regex Pattern
+
         controlPanel.add(new Label("Regex Pattern:"), 0, row);
         regexField = new TextField();
         regexField.setPrefWidth(200);
@@ -98,7 +96,7 @@ public class TextProcessorUserInterface extends Application {
         controlPanel.add(findMatchesButton, 2, row);
         row++;
 
-        // Replace
+
         controlPanel.add(new Label("Replace Pattern:"), 0, row);
         replacePatternField = new TextField();
         replacePatternField.setPrefWidth(200);
@@ -114,7 +112,6 @@ public class TextProcessorUserInterface extends Application {
         controlPanel.add(replaceButton, 2, row);
         row++;
 
-        // Summarize
         controlPanel.add(new Label("Summarize (Top N Sentences):"), 0, row);
         summarizeField = new TextField();
         summarizeField.setPrefWidth(200);
@@ -124,7 +121,7 @@ public class TextProcessorUserInterface extends Application {
         controlPanel.add(summarizeButton, 2, row);
         row++;
 
-        // Save and List Buttons
+
         HBox buttonBox = new HBox(10);
         Button saveToDBButton = new Button("Save to DB");
         saveToDBButton.setOnAction(e -> saveToDB(root));
@@ -143,18 +140,15 @@ public class TextProcessorUserInterface extends Application {
 
         root.setTop(controlPanel);
 
-        // Status and DB Entries Panel
         VBox bottomPanel = new VBox(10);
         bottomPanel.setPadding(new Insets(10));
 
-        // Status Panel
         VBox statusPanel = new VBox(5);
         wordCountLabel = new Label("Word Count: 0");
         matchCountLabel = new Label("Matches Found: 0");
         statusPanel.getChildren().addAll(wordCountLabel, matchCountLabel);
         bottomPanel.getChildren().add(statusPanel);
 
-        // DB Entries List
         dbEntriesListView = new ListView<>();
         dbEntriesListView.setPrefHeight(100);
         dbEntriesListView.setOnMouseClicked(event -> {
@@ -170,7 +164,6 @@ public class TextProcessorUserInterface extends Application {
 
         root.setBottom(bottomPanel);
 
-        // Scene and Stage
         Scene scene = new Scene(root, 800, 700);
         primaryStage.setScene(scene);
         primaryStage.show();
@@ -190,7 +183,7 @@ public class TextProcessorUserInterface extends Application {
                 isUpdatingEntry = false;
                 updatingEntryId = null;
             }
-        } catch (IOException | IllegalArgumentException | IllegalStateException ex) {
+        } catch (InvalidFilePathException | FileProcessingException | IllegalStateException ex) {
             showAlert(Alert.AlertType.ERROR, "Error", "Error loading file: " + ex.getMessage());
         }
     }
@@ -319,7 +312,7 @@ public class TextProcessorUserInterface extends Application {
                 updateWordCount();
                 root.setCenter(textArea); // Ensure text area is shown
             }
-        } catch (IOException ex) {
+        } catch (FileProcessingException ex) {
             showAlert(Alert.AlertType.ERROR, "Error", "Error saving to file: " + ex.getMessage());
         }
     }
