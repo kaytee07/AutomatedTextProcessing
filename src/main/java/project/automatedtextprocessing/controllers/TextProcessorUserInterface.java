@@ -45,26 +45,22 @@ public class TextProcessorUserInterface extends Application {
     private void initializeUI(Stage primaryStage) {
         primaryStage.setTitle("Text Processor");
 
-        // Main layout with TabPane
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(10));
 
         TabPane tabPane = new TabPane();
         tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
 
-        // Tab 1: Text Processing
         Tab textProcessingTab = new Tab("Text Processing");
         textProcessingTab.setContent(createTextProcessingPane());
         tabPane.getTabs().add(textProcessingTab);
 
-        // Tab 2: Database Entries
         Tab dbEntriesTab = new Tab("Database Entries");
         dbEntriesTab.setContent(createDBEntriesPane());
         tabPane.getTabs().add(dbEntriesTab);
 
         root.setCenter(tabPane);
 
-        // Scene
         Scene scene = new Scene(root, 800, 700);
         primaryStage.setScene(scene);
         primaryStage.show();
@@ -76,26 +72,22 @@ public class TextProcessorUserInterface extends Application {
         VBox textProcessingPane = new VBox(10);
         textProcessingPane.setPadding(new Insets(10));
 
-        // Text Area
         textArea = new TextArea();
         textArea.setWrapText(true);
         textArea.setPrefRowCount(15);
         textArea.setPrefColumnCount(50);
 
-        // Update StringBuilder and word count on text change
         textArea.textProperty().addListener((obs, oldValue, newValue) -> {
             processor.writeToStringBuilder(newValue);
             updateWordCount();
         });
 
-        // Matches Area
         matchesArea = new TextArea();
         matchesArea.setWrapText(true);
         matchesArea.setPrefRowCount(5);
         matchesArea.setEditable(false);
         matchesArea.setPromptText("Regex matches will appear here");
 
-        // Control Panel
         GridPane controlPanel = new GridPane();
         controlPanel.setHgap(10);
         controlPanel.setVgap(10);
@@ -104,14 +96,12 @@ public class TextProcessorUserInterface extends Application {
 
         int row = 0;
 
-        // File Selection
         controlPanel.add(new Label("File:"), 0, row);
         Button chooseFileButton = new Button("Choose File");
         chooseFileButton.setOnAction(e -> chooseAndLoadFile());
         controlPanel.add(chooseFileButton, 1, row);
         row++;
 
-        // Regex Pattern
         controlPanel.add(new Label("Regex Pattern:"), 0, row);
         regexField = new TextField();
         regexField.setPrefWidth(200);
@@ -121,7 +111,6 @@ public class TextProcessorUserInterface extends Application {
         controlPanel.add(findMatchesButton, 2, row);
         row++;
 
-        // Replace
         controlPanel.add(new Label("Replace Pattern:"), 0, row);
         replacePatternField = new TextField();
         replacePatternField.setPrefWidth(200);
@@ -137,7 +126,6 @@ public class TextProcessorUserInterface extends Application {
         controlPanel.add(replaceButton, 2, row);
         row++;
 
-        // Summarize
         controlPanel.add(new Label("Summarize (Top N Sentences):"), 0, row);
         summarizeField = new TextField();
         summarizeField.setPrefWidth(200);
@@ -147,7 +135,6 @@ public class TextProcessorUserInterface extends Application {
         controlPanel.add(summarizeButton, 2, row);
         row++;
 
-        // Buttons
         HBox buttonBox = new HBox(10);
         Button saveToDBButton = new Button("Save to DB");
         saveToDBButton.setOnAction(e -> saveToDB());
@@ -160,7 +147,6 @@ public class TextProcessorUserInterface extends Application {
         buttonBox.getChildren().addAll(saveToDBButton, saveToFileButton, newTextButton, clearButton);
         controlPanel.add(buttonBox, 0, row, 3, 1);
 
-        // Status Panel
         VBox statusPanel = new VBox(5);
         wordCountLabel = new Label("Word Count: 0");
         matchCountLabel = new Label("Matches Found: 0");
