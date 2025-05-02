@@ -1,6 +1,7 @@
 package project.automatedtextprocessing.models;
 
 import project.automatedtextprocessing.Utils.RegexMatchResult;
+import project.automatedtextprocessing.exceptions.FileProcessingException;
 import project.automatedtextprocessing.models.TextFileProcessor;
 
 import java.io.IOException;
@@ -15,14 +16,14 @@ public class Main {
 
 
             String emailPattern = "\\b[\\w.%-]+@[\\w.-]+\\.[a-zA-Z]{2,}\\b";
-            ArrayList<RegexMatchResult> matches = processor.findMatchesInFile(emailPattern);
+            ArrayList<RegexMatchResult> matches = processor.regexPatternRecognizer(emailPattern);
             for (RegexMatchResult match : matches) {
                 System.out.println("Found: " + match.getMatchedText() + " at " + match.getStartIndex());
             }
 
 
             for (RegexMatchResult match : matches) {}
-        } catch (IOException e) {
+        } catch (FileProcessingException e) {
             System.err.println("IO Error: " + e.getMessage());
         } catch (IllegalArgumentException | IllegalStateException e) {
             System.err.println("Error: " + e.getMessage());
