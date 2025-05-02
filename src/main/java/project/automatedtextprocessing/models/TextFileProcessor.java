@@ -170,6 +170,9 @@ public class TextFileProcessor {
     }
 
     public void saveEntryToDB(String content) {
+        if (content.isEmpty()){
+            throw new IllegalArgumentException("No content to write to file");
+        }
         TextData newEntry = new TextData(String.valueOf(ID), content);
         dataHandler.addData(newEntry);
         logger.info("New text entry saved with ID: " + ID);
