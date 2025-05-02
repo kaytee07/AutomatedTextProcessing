@@ -11,8 +11,6 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.scene.text.Text;
-import javafx.scene.text.TextFlow;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import java.io.File;
@@ -32,8 +30,7 @@ public class TextProcessorUserInterface extends Application {
     private ListView<String> dbEntriesListView;
     private TextField summarizeField;
     private FileChooser fileChooser;
-    private ScrollPane textFlowScrollPane;
-    private TextFlow textFlow;
+    private TextArea matchesArea;
     private boolean isUpdatingEntry = false;
     private String updatingEntryId = null;
 
@@ -48,29 +45,57 @@ public class TextProcessorUserInterface extends Application {
     private void initializeUI(Stage primaryStage) {
         primaryStage.setTitle("Text Processor");
 
+        // Main layout with TabPane
         BorderPane root = new BorderPane();
         root.setPadding(new Insets(10));
 
+        TabPane tabPane = new TabPane();
+        tabPane.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+
+        // Tab 1: Text Processing
+        Tab textProcessingTab = new Tab("Text Processing");
+        textProcessingTab.setContent(createTextProcessingPane());
+        tabPane.getTabs().add(textProcessingTab);
+
+        // Tab 2: Database Entries
+        Tab dbEntriesTab = new Tab("Database Entries");
+        dbEntriesTab.setContent(createDBEntriesPane());
+        tabPane.getTabs().add(dbEntriesTab);
+
+        root.setCenter(tabPane);
+
+        // Scene
+        Scene scene = new Scene(root, 800, 700);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+
+        updateWordCount();
+    }
+
+    private VBox createTextProcessingPane() {
+        VBox textProcessingPane = new VBox(10);
+        textProcessingPane.setPadding(new Insets(10));
+
+        // Text Area
         textArea = new TextArea();
         textArea.setWrapText(true);
-        textArea.setPrefRowCount(20);
+        textArea.setPrefRowCount(15);
         textArea.setPrefColumnCount(50);
 
-
+        // Update StringBuilder and word count on text change
         textArea.textProperty().addListener((obs, oldValue, newValue) -> {
             processor.writeToStringBuilder(newValue);
             updateWordCount();
-            root.setCenter(textArea);
         });
 
-        textFlow = new TextFlow();
-        textFlow.setLineSpacing(2.0);
-        textFlowScrollPane = new ScrollPane(textFlow);
-        textFlowScrollPane.setFitToWidth(true);
-        textFlowScrollPane.setPrefHeight(textArea.getPrefHeight());
+        // Matches Area
+        matchesArea = new TextArea();
+        matchesArea.setWrapText(true);
+        matchesArea.setPrefRowCount(5);
+        matchesArea.setEditable(false);
+        matchesArea.setPromptText("Regex matches will appear here");
 
-        root.setCenter(textArea);
-
+        // Control Panel
         GridPane controlPanel = new GridPane();
         controlPanel.setHgap(10);
         controlPanel.setVgap(10);
@@ -79,23 +104,24 @@ public class TextProcessorUserInterface extends Application {
 
         int row = 0;
 
+        // File Selection
         controlPanel.add(new Label("File:"), 0, row);
         Button chooseFileButton = new Button("Choose File");
-        chooseFileButton.setOnAction(e -> chooseAndLoadFile(primaryStage, root));
+        chooseFileButton.setOnAction(e -> chooseAndLoadFile());
         controlPanel.add(chooseFileButton, 1, row);
         row++;
 
-
+        // Regex Pattern
         controlPanel.add(new Label("Regex Pattern:"), 0, row);
         regexField = new TextField();
         regexField.setPrefWidth(200);
         controlPanel.add(regexField, 1, row);
         Button findMatchesButton = new Button("Find Matches");
-        findMatchesButton.setOnAction(e -> findAndHighlightMatches(root));
+        findMatchesButton.setOnAction(e -> findAndDisplayMatches());
         controlPanel.add(findMatchesButton, 2, row);
         row++;
 
-
+        // Replace
         controlPanel.add(new Label("Replace Pattern:"), 0, row);
         replacePatternField = new TextField();
         replacePatternField.setPrefWidth(200);
@@ -107,130 +133,108 @@ public class TextProcessorUserInterface extends Application {
         replacementField.setPrefWidth(200);
         controlPanel.add(replacementField, 1, row);
         Button replaceButton = new Button("Replace");
-        replaceButton.setOnAction(e -> replaceText(root));
+        replaceButton.setOnAction(e -> replaceText());
         controlPanel.add(replaceButton, 2, row);
         row++;
 
+        // Summarize
         controlPanel.add(new Label("Summarize (Top N Sentences):"), 0, row);
         summarizeField = new TextField();
         summarizeField.setPrefWidth(200);
         controlPanel.add(summarizeField, 1, row);
         Button summarizeButton = new Button("Summarize");
-        summarizeButton.setOnAction(e -> summarizeText(root));
+        summarizeButton.setOnAction(e -> summarizeText());
         controlPanel.add(summarizeButton, 2, row);
         row++;
 
-
+        // Buttons
         HBox buttonBox = new HBox(10);
         Button saveToDBButton = new Button("Save to DB");
-        saveToDBButton.setOnAction(e -> saveToDB(root));
+        saveToDBButton.setOnAction(e -> saveToDB());
         Button saveToFileButton = new Button("Save to File");
-        saveToFileButton.setOnAction(e -> saveToFile(primaryStage, root));
-        Button updateEntryButton = new Button("Update Entry");
-        updateEntryButton.setOnAction(e -> updateEntry());
-        Button listDBButton = new Button("List DB Entries");
-        listDBButton.setOnAction(e -> listDBEntries());
+        saveToFileButton.setOnAction(e -> saveToFile());
         Button newTextButton = new Button("New Text");
-        newTextButton.setOnAction(e -> newText(root));
+        newTextButton.setOnAction(e -> newText());
         Button clearButton = new Button("Clear");
-        clearButton.setOnAction(e -> clearText(root));
-        buttonBox.getChildren().addAll(saveToDBButton, saveToFileButton, updateEntryButton, listDBButton, newTextButton, clearButton);
+        clearButton.setOnAction(e -> clearText());
+        buttonBox.getChildren().addAll(saveToDBButton, saveToFileButton, newTextButton, clearButton);
         controlPanel.add(buttonBox, 0, row, 3, 1);
 
-        root.setTop(controlPanel);
-
-        VBox bottomPanel = new VBox(10);
-        bottomPanel.setPadding(new Insets(10));
-
+        // Status Panel
         VBox statusPanel = new VBox(5);
         wordCountLabel = new Label("Word Count: 0");
         matchCountLabel = new Label("Matches Found: 0");
         statusPanel.getChildren().addAll(wordCountLabel, matchCountLabel);
-        bottomPanel.getChildren().add(statusPanel);
 
-        dbEntriesListView = new ListView<>();
-        dbEntriesListView.setPrefHeight(100);
-        dbEntriesListView.setOnMouseClicked(event -> {
-//            if (event.getClickCount() == 2) {
-//                loadDBEntry(root);
-//            }
-        });
-        Button deleteDBEntryButton = new Button("Delete Selected Entry");
-        deleteDBEntryButton.setOnAction(e -> deleteDBEntry());
-        bottomPanel.getChildren().add(new Label("Database Entries:"));
-        bottomPanel.getChildren().add(dbEntriesListView);
-        bottomPanel.getChildren().add(deleteDBEntryButton);
-
-        root.setBottom(bottomPanel);
-
-        Scene scene = new Scene(root, 800, 700);
-        primaryStage.setScene(scene);
-        primaryStage.show();
-
-        updateWordCount();
+        textProcessingPane.getChildren().addAll(controlPanel, new Label("Text Input:"), textArea,
+                new Label("Regex Matches:"), matchesArea, statusPanel);
+        return textProcessingPane;
     }
 
-    private void chooseAndLoadFile(Stage stage, BorderPane root) {
+    private VBox createDBEntriesPane() {
+        VBox dbEntriesPane = new VBox(10);
+        dbEntriesPane.setPadding(new Insets(10));
+
+        dbEntriesListView = new ListView<>();
+        dbEntriesListView.setPrefHeight(200);
+        dbEntriesListView.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2) {
+                loadDBEntry();
+            }
+        });
+
+        HBox dbButtonBox = new HBox(10);
+        Button listDBButton = new Button("List DB Entries");
+        listDBButton.setOnAction(e -> listDBEntries());
+        Button updateEntryButton = new Button("Update Entry");
+        updateEntryButton.setOnAction(e -> updateEntry());
+        Button deleteDBEntryButton = new Button("Delete Selected Entry");
+        deleteDBEntryButton.setOnAction(e -> deleteDBEntry());
+        dbButtonBox.getChildren().addAll(listDBButton, updateEntryButton, deleteDBEntryButton);
+
+        dbEntriesPane.getChildren().addAll(new Label("Database Entries:"), dbEntriesListView, dbButtonBox);
+        return dbEntriesPane;
+    }
+
+    private void chooseAndLoadFile() {
         try {
-            File file = fileChooser.showOpenDialog(stage);
+            File file = fileChooser.showOpenDialog(null);
             if (file != null) {
                 processor.setFilePath(file.getAbsolutePath());
                 processor.readTextFile();
                 textArea.setText(processor.getAllLines().toString());
                 updateWordCount();
-                root.setCenter(textArea); // Ensure text area is shown
                 isUpdatingEntry = false;
                 updatingEntryId = null;
+                matchesArea.setText("");
             }
         } catch (InvalidFilePathException | FileProcessingException | IllegalStateException ex) {
             showAlert(Alert.AlertType.ERROR, "Error", "Error loading file: " + ex.getMessage());
         }
     }
 
-    private void findAndHighlightMatches(BorderPane root) {
+    private void findAndDisplayMatches() {
         try {
             String regex = regexField.getText();
             if (!regex.isEmpty()) {
                 ArrayList<RegexMatchResult> matches = processor.regexPatternRecognizer(regex);
                 matchCountLabel.setText("Matches Found: " + matches.size());
-
-                textFlow.getChildren().clear();
-
-                String text = textArea.getText();
-                int lastIndex = 0;
-
+                StringBuilder matchDetails = new StringBuilder();
                 for (RegexMatchResult match : matches) {
-                    int start = match.getStartIndex();
-                    int end = match.getEndIndex();
-
-
-                    if (lastIndex < start) {
-                        Text before = new Text(text.substring(lastIndex, start));
-                        textFlow.getChildren().add(before);
-                    }
-
-
-                    Text matchText = new Text(text.substring(start, end));
-                    matchText.setStyle("-fx-fill: black; -fx-background-color: yellow; -fx-background-radius: 2;");
-                    textFlow.getChildren().add(matchText);
-
-                    lastIndex = end;
+                    matchDetails.append(match.getMatchedText()).append("\n");
                 }
-
-                if (lastIndex < text.length()) {
-                    Text remaining = new Text(text.substring(lastIndex));
-                    textFlow.getChildren().add(remaining);
-                }
-
+                matchesArea.setText(matchDetails.toString());
                 regexField.setText("");
-                root.setCenter(textFlowScrollPane);
+            } else {
+                matchesArea.setText("");
+                matchCountLabel.setText("Matches Found: 0");
             }
         } catch (Exception ex) {
             showAlert(Alert.AlertType.ERROR, "Error", "Error finding matches: " + ex.getMessage());
         }
     }
 
-    private void replaceText(BorderPane root) {
+    private void replaceText() {
         try {
             String pattern = replacePatternField.getText();
             String replacement = replacementField.getText();
@@ -239,16 +243,15 @@ public class TextProcessorUserInterface extends Application {
                 textArea.setText(result);
                 processor.writeToStringBuilder(result);
                 updateWordCount();
-                root.setCenter(textArea);
+                replacePatternField.setText("");
+                replacementField.setText("");
             }
-            replacePatternField.setText("");
-            replacementField.setText("");
         } catch (Exception ex) {
             showAlert(Alert.AlertType.ERROR, "Error", "Error replacing text: " + ex.getMessage());
         }
     }
 
-    private void summarizeText(BorderPane root) {
+    private void summarizeText() {
         try {
             String input = summarizeField.getText();
             int topN;
@@ -268,47 +271,44 @@ public class TextProcessorUserInterface extends Application {
             textArea.setText(summaryText.toString());
             processor.writeToStringBuilder(summaryText.toString());
             updateWordCount();
-            root.setCenter(textArea);
         } catch (Exception ex) {
             showAlert(Alert.AlertType.ERROR, "Error", "Error summarizing text: " + ex.getMessage());
         }
     }
 
-    private void saveToDB(BorderPane root) {
+    private void saveToDB() {
         try {
-            if (isUpdatingEntry && updatingEntryId != null) {
+            if (isUpdatingEntry && updatingEntryId != null && !textArea.getText().isEmpty()) {
                 processor.updateEntry(updatingEntryId);
                 showAlert(Alert.AlertType.INFORMATION, "Success", "Database entry updated");
                 textArea.setText("");
                 processor.writeToStringBuilder("");
                 isUpdatingEntry = false;
                 updatingEntryId = null;
-            } else {
+            } else if (!textArea.getText().isEmpty()) {
                 processor.saveEntryToDB(textArea.getText());
                 showAlert(Alert.AlertType.INFORMATION, "Success", "Content saved to database");
             }
             listDBEntries();
             updateWordCount();
-            root.setCenter(textArea);
         } catch (Exception ex) {
             showAlert(Alert.AlertType.ERROR, "Error", "Error saving to database: " + ex.getMessage());
         }
     }
 
-    private void saveToFile(Stage stage, BorderPane root) {
+    private void saveToFile() {
         try {
-            File file = fileChooser.showSaveDialog(stage);
+            File file = fileChooser.showSaveDialog(null);
             if (file != null) {
                 processor.EditFileTexts(textArea.getText(), file.getAbsolutePath());
                 showAlert(Alert.AlertType.INFORMATION, "Success", "Content saved to file");
                 if (isUpdatingEntry) {
-                    textArea.setText(""); // Clear text area
+                    textArea.setText("");
                     processor.writeToStringBuilder("");
                     isUpdatingEntry = false;
                     updatingEntryId = null;
                 }
                 updateWordCount();
-                root.setCenter(textArea); // Ensure text area is shown
             }
         } catch (FileProcessingException ex) {
             showAlert(Alert.AlertType.ERROR, "Error", "Error saving to file: " + ex.getMessage());
@@ -326,7 +326,6 @@ public class TextProcessorUserInterface extends Application {
             } else {
                 showAlert(Alert.AlertType.WARNING, "Warning", "Please select an entry to update");
             }
-
         } catch (Exception ex) {
             showAlert(Alert.AlertType.ERROR, "Error", "Error preparing entry for update: " + ex.getMessage());
         }
@@ -345,28 +344,27 @@ public class TextProcessorUserInterface extends Application {
         }
     }
 
-//    private void loadDBEntry(BorderPane root) {
-//        try {
-//            String selected = dbEntriesListView.getSelectionModel().getSelectedItem();
-//            if (selected != null) {
-//                String id = selected.split(" \\| ")[0].replace("ID: ", "");
-//                ArrayList<TextData> entries = processor.getAllEntries();
-//                for (TextData entry : entries) {
-//                    if (entry.getId().equals(id)) {
-//                        textArea.setText(entry.getContent());
-//                        processor.writeToStringBuilder(entry.getContent());
-//                        updateWordCount();
-//                        root.setCenter(textArea);
-//                        isUpdatingEntry = false;
-//                        updatingEntryId = null;
-//                        break;
-//                    }
-//                }
-//            }
-//        } catch (Exception ex) {
-//            showAlert(Alert.AlertType.ERROR, "Error", "Error loading database entry: " + ex.getMessage());
-//        }
-//    }
+    private void loadDBEntry() {
+        try {
+            String selected = dbEntriesListView.getSelectionModel().getSelectedItem();
+            if (selected != null) {
+                String id = selected.split(" \\| ")[0].replace("ID: ", "");
+                ArrayList<TextData> entries = processor.getAllEntries();
+                for (TextData entry : entries) {
+                    if (entry.getId().equals(id)) {
+                        textArea.setText(entry.getContent());
+                        processor.writeToStringBuilder(entry.getContent());
+                        updateWordCount();
+                        isUpdatingEntry = false;
+                        updatingEntryId = null;
+                        break;
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            showAlert(Alert.AlertType.ERROR, "Error", "Error loading database entry: " + ex.getMessage());
+        }
+    }
 
     private void deleteDBEntry() {
         try {
@@ -374,7 +372,7 @@ public class TextProcessorUserInterface extends Application {
             if (selected != null) {
                 String id = selected.split(" \\| ")[0].replace("ID: ", "");
                 processor.deleteEntry(id);
-                listDBEntries(); // Refresh DB entries list
+                listDBEntries();
                 showAlert(Alert.AlertType.INFORMATION, "Success", "Database entry deleted");
                 if (isUpdatingEntry && updatingEntryId != null && updatingEntryId.equals(id)) {
                     isUpdatingEntry = false;
@@ -388,23 +386,23 @@ public class TextProcessorUserInterface extends Application {
         }
     }
 
-    private void newText(BorderPane root) {
+    private void newText() {
         textArea.setText("");
         processor.writeToStringBuilder("");
         updateWordCount();
         isUpdatingEntry = false;
         updatingEntryId = null;
-        root.setCenter(textArea); // Ensure text area is shown
+        matchesArea.setText("");
     }
 
-    private void clearText(BorderPane root) {
+    private void clearText() {
         textArea.setText("");
         processor.writeToStringBuilder("");
         updateWordCount();
         matchCountLabel.setText("Matches Found: 0");
         isUpdatingEntry = false;
         updatingEntryId = null;
-        root.setCenter(textArea); // Ensure text area is shown
+        matchesArea.setText("");
     }
 
     private void updateWordCount() {
