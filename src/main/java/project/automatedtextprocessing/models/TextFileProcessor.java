@@ -1,12 +1,20 @@
 package project.automatedtextprocessing.models;
 
 import project.automatedtextprocessing.Utils.RegexMatchResult;
+import project.automatedtextprocessing.exceptions.ContentNotAvailableException;
+import project.automatedtextprocessing.exceptions.FileProcessingException;
+import project.automatedtextprocessing.exceptions.InvalidFilePathException;
+
 import java.io.*;
 import java.lang.reflect.Array;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.logging.*;
+import java.util.stream.Collectors;
 
 public class TextFileProcessor {
+    private static final Logger logger = Logger.getLogger(TextFileProcessor.class.getName());
+
     private String filePath;
     private StringBuilder fileTexts;
     private TextRegexProcessor textRegexProcessor;
@@ -21,25 +29,36 @@ public class TextFileProcessor {
 
     public void setFilePath(String path) {
         if (path == null || path.trim().isEmpty()) {
-            throw new IllegalArgumentException("File path cannot be null or empty");
+            logger.warning("Attempted to set a null or empty file path.");
+            throw new InvalidFilePathException("File path cannot be null or empty");
         }
+
         File file = new File(path);
         if (!file.exists() || !file.isFile() || !file.canRead()) {
-            throw new IllegalArgumentException("Invalid or unreadable file: " + path);
+            logger.warning("Invalid or unreadable file: " + path);
+            throw new InvalidFilePathException("Invalid or unreadable file: " + path);
         }
-        filePath = path;
+
+        this.filePath = path;
+        logger.info("File path set to: " + path);
     }
 
-    public void readTextFile() throws IOException {
+    public void readTextFile() {
         if (filePath == null) {
-            throw new IllegalStateException("File path is not set");
+            logger.severe("File path is not set before reading.");
+            throw new InvalidFilePathException("File path is not set");
         }
+
         fileTexts.setLength(0);
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             String textLine;
             while ((textLine = br.readLine()) != null) {
                 fileTexts.append(textLine).append("\n");
             }
+            logger.info("Successfully read content from file: " + filePath);
+        } catch (IOException e) {
+            logger.severe("Error reading file: " + e.getMessage());
+            throw new FileProcessingException("Error reading file: " + filePath, e);
         }
     }
 
@@ -47,19 +66,21 @@ public class TextFileProcessor {
         if (content == null || content.isEmpty()) return;
         fileTexts.setLength(0);
 
-        String[] lines = content.split("\\r?\\n"); // Handle different newline formats
+        String[] lines = content.split("\\r?\\n");
         for (String line : lines) {
             fileTexts.append(line).append(System.lineSeparator());
         }
+
+        logger.info("Content written to StringBuilder");
     }
 
     public StringBuilder getAllLines() {
         if (fileTexts.length() == 0) {
-            throw new IllegalStateException("No content available. Ensure the file has been read and is not empty.");
+            logger.warning("Attempted to access empty file text content.");
+            throw new ContentNotAvailableException("No content available. Ensure the file has been read and is not empty.");
         }
         return fileTexts;
     }
-
 
     public ArrayList<RegexMatchResult> wordPatternRecognizer(String regex) {
         textRegexProcessor.compileTextPattern(regex);
@@ -80,27 +101,27 @@ public class TextFileProcessor {
         return textRegexProcessor.replaceAMatch(pattern, replacement);
     }
 
-    public void EditFileTexts(String inputText, String outputPath) throws IOException {
+    public void EditFileTexts(String inputText, String outputPath) {
         try {
             fileTexts = new StringBuilder();
             fileTexts.append(inputText);
             writeToFile(outputPath, inputText);
+            logger.info("File text edited and written to: " + outputPath);
         } catch (IOException e) {
-            throw e;
+            logger.severe("Failed to edit and write file: " + e.getMessage());
+            throw new FileProcessingException("Failed to edit and write file", e);
         }
     }
 
-    public int getWordFrequencies (ArrayList<String> data) {
-        int wordCount = data.stream()
-                .reduce(0, (acc, match) -> acc + 1, Integer:: sum);
-        return wordCount;
+    public int getWordFrequencies(ArrayList<String> data) {
+        return data.size(); // Slightly simplified since reduce wasn't really necessary
     }
 
-    public int  getNumberOfWords () {
+    public int getNumberOfWords() {
         String text = fileTexts.toString();
-        int numOfWords = Arrays.stream(text.split("\\s+"))
-                .reduce(0, (acc, words) -> acc + 1, Integer::sum);
-        return numOfWords;
+        return (int) Arrays.stream(text.split("\\s+"))
+                .filter(word -> !word.isBlank())
+                .count();
     }
 
     public static List<String> summarize(List<String> lines, int topN) {
@@ -143,33 +164,39 @@ public class TextFileProcessor {
                 .collect(Collectors.toList());
     }
 
-
-
     private static boolean isStopWord(String word) {
         Set<String> stopWords = Set.of("the", "is", "at", "which", "on", "a", "an", "and", "or", "of", "in", "to", "for", "by", "with");
         return stopWords.contains(word);
     }
 
-    public void saveEntryToDB(String content){
+    public void saveEntryToDB(String content) {
         TextData newEntry = new TextData(String.valueOf(ID), content);
         dataHandler.addData(newEntry);
+        logger.info("New text entry saved with ID: " + ID);
+        ID++;
     }
 
-    public ArrayList<TextData> getAllEntries(){
+    public ArrayList<TextData> getAllEntries() {
         return dataHandler.listAllEntries();
     }
 
-    public void updateEntry(String id){
+    public void updateEntry(String id) {
         dataHandler.updateEntry(id, fileTexts.toString());
+        logger.info("Updated entry with ID: " + id);
     }
 
-    public void deleteEntry(String id){
+    public void deleteEntry(String id) {
         dataHandler.deleteEntry(id);
+        logger.info("Deleted entry with ID: " + id);
     }
 
     public void writeToFile(String outputPath, String content) throws IOException {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(outputPath))) {
             bw.write(content);
+            logger.info("Successfully wrote content to file: " + outputPath);
+        } catch (IOException e) {
+            logger.severe("Error writing to file: " + e.getMessage());
+            throw new FileProcessingException("Error writing to file: " + outputPath, e);
         }
     }
 }
